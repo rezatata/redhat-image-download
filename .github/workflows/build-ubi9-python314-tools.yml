@@ -1,0 +1,45 @@
+name: Build UBI9 Python 3.14 with Linux tools TAR
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Red Hat custom base image
+        run: |
+          docker build --pull --platform linux/amd64 \
+            --file Dockerfile.base \
+            --tag ubi9-python314-tools:1.0 .
+
+      - name: Verify tools and Python
+        run: |
+          docker run --rm --platform linux/amd64 \
+            ubi9-python314-tools:1.0 \
+            /bin/sh -c 'python3.14 --version && python3.14 -m pip --version && command -v vim && command -v ssh && command -v nc && command -v netstat && rpm -q libaio'
+
+      - name: Export image to Docker TAR
+        run: |
+          docker save --output ubi9-python314-tools-amd64.tar ubi9-python314-tools:1.0
+          sha256sum ubi9-python314-tools-amd64.tar > ubi9-python314-tools-amd64.tar.sha256
+          ls -lh ubi9-python314-tools-amd64.tar
+
+      - name: Publish TAR in GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "ubi9-python314-tools-${GITHUB_RUN_ID}" \
+            ubi9-python314-tools-amd64.tar \
+            ubi9-python314-tools-amd64.tar.sha256 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Red Hat UBI9 + Python 3.14 + Linux tools" \
+            --notes "Docker TAR for linux/amd64. No Python application requirements installed."
