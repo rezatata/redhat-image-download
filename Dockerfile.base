@@ -1,0 +1,35 @@
+# Red Hat UBI 9 (standard) + Python 3.14 + requested Linux tools only.
+# Built on GitHub Actions; no application requirements are installed here.
+FROM redhat/ubi9:latest
+
+USER 0
+
+RUN set -eux; \
+    dnf install -y \
+        python3.14 \
+        python3.14-pip \
+        zip \
+        unzip \
+        vim-enhanced \
+        libaio \
+        openssh-clients \
+        net-tools \
+        nmap-ncat \
+        shadow-utils; \
+    dnf clean all; \
+    rm -rf /var/cache/dnf; \
+    python3.14 --version; \
+    python3.14 -m pip --version; \
+    command -v zip; \
+    command -v unzip; \
+    command -v vim; \
+    command -v ssh; \
+    command -v netstat; \
+    command -v nc; \
+    command -v useradd; \
+    rpm -q libaio; \
+    python3.14 -m venv /tmp/venv-test; \
+    /tmp/venv-test/bin/python -m pip --version; \
+    rm -rf /tmp/venv-test
+
+WORKDIR /app
